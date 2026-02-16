@@ -15,7 +15,6 @@ interface Attachment {
 type ViewMode = 'chat' | 'memory' | 'create-persona';
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [personality, setPersonality] = useState<PersonalityMode>('Amigão');
@@ -34,19 +33,11 @@ const App: React.FC = () => {
   // Memory
   const [longTermMemory, setLongTermMemory] = useState<string[]>([]);
 
-  // Login State
-  const [loginUser, setLoginUser] = useState('');
-  const [loginPass, setLoginPass] = useState('');
-  const [loginError, setLoginError] = useState('');
-
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gemini = useRef(new GeminiService());
 
   useEffect(() => {
-    const auth = localStorage.getItem('leoh_auth');
-    if (auth === 'true') setIsAuthenticated(true);
-
     const savedPersonas = localStorage.getItem('leoh_personas');
     if (savedPersonas) setCustomPersonas(JSON.parse(savedPersonas));
 
@@ -81,29 +72,17 @@ const App: React.FC = () => {
     localStorage.setItem('leoh_long_memory', JSON.stringify(longTermMemory));
   }, [longTermMemory]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loginUser === 'LeonhardToledo' && loginPass === '1315') {
-      setIsAuthenticated(true);
-      localStorage.setItem('leoh_auth', 'true');
-      setLoginError('');
-    } else {
-      setLoginError('Usuário ou senha incorretos.');
+  const resetChat = () => {
+    const confirmReset = window.confirm("Deseja limpar todo o histórico desta conversa?");
+    if (confirmReset) {
+      setMessages([{
+          id: 'initial',
+          role: 'model',
+          text: 'E aí, parceiro! Eu sou o Leoh AI. O que a gente vai criar hoje?',
+          timestamp: Date.now()
+      }]);
+      localStorage.removeItem('leoh_messages');
     }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('leoh_auth');
-    setLoginUser('');
-    setLoginPass('');
-    setMessages([{
-        id: 'initial',
-        role: 'model',
-        text: 'E aí, parceiro! Eu sou o Leoh AI. O que a gente vai criar hoje?',
-        timestamp: Date.now()
-    }]);
-    localStorage.removeItem('leoh_messages');
   };
 
   const startChatWithPersona = (persona: Persona) => {
@@ -262,56 +241,6 @@ const App: React.FC = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center p-8">
-        <div className="animate-float mb-6">
-          <Logo size={220} />
-        </div>
-        <div className="mb-10 text-center fade-in">
-          <h1 className="font-display font-black tracking-tighter flex items-center justify-center text-glow">
-            <span className="text-7xl md:text-9xl text-leoh-light drop-shadow-2xl">Leoh</span>
-            <span className="text-4xl md:text-5xl text-leoh-accent ml-2 font-black bg-clip-text text-transparent bg-gradient-to-br from-leoh-primary via-leoh-magenta to-leoh-accent">AI</span>
-          </h1>
-          <p className="mt-4 text-leoh-light/40 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs">Humano • Digital</p>
-        </div>
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 fade-in relative z-20">
-          <div className="gradient-border p-[2px] relative group">
-            <input 
-              type="text" 
-              placeholder="Identidade de Usuário" 
-              value={loginUser}
-              autoComplete="username"
-              onChange={(e) => setLoginUser(e.target.value)}
-              className="w-full bg-leoh-deep/90 backdrop-blur-md rounded-[16px] py-4 px-6 outline-none focus:ring-2 ring-leoh-primary/30 transition-all text-white block relative z-30 placeholder:text-white/20"
-            />
-          </div>
-          <div className="gradient-border p-[2px] relative group">
-            <input 
-              type="password" 
-              placeholder="Código de Acesso" 
-              value={loginPass}
-              autoComplete="current-password"
-              onChange={(e) => setLoginPass(e.target.value)}
-              className="w-full bg-leoh-deep/90 backdrop-blur-md rounded-[16px] py-4 px-6 outline-none focus:ring-2 ring-leoh-primary/30 transition-all text-white block relative z-30 placeholder:text-white/20"
-            />
-          </div>
-          {loginError && <p className="text-leoh-primary text-xs text-center font-bold animate-pulse uppercase tracking-wider">{loginError}</p>}
-          <button 
-            type="submit"
-            className="w-full py-5 bg-gradient-to-r from-leoh-primary to-leoh-magenta rounded-2xl font-black text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-leoh-primary/30 text-white relative z-30 uppercase tracking-widest overflow-hidden group"
-          >
-            <span className="relative z-10">Iniciar Portal</span>
-            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-          </button>
-        </form>
-        <div className="mt-12 opacity-20 text-[10px] uppercase tracking-widest font-bold text-center px-4">
-          v3.0 ® Todos direitos reservados a Leonardo Toledo
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen overflow-hidden text-leoh-light font-sans fade-in">
       {/* Sidebar Simples */}
@@ -377,10 +306,10 @@ const App: React.FC = () => {
                 <Avatar mood={avatarMood} />
               </div>
               <button 
-                onClick={handleLogout}
+                onClick={resetChat}
                 className="mt-4 text-[10px] text-leoh-primary font-black uppercase tracking-widest hover:underline"
               >
-                Sair do Sistema
+                Limpar Histórico
               </button>
            </div>
         </div>
@@ -395,8 +324,8 @@ const App: React.FC = () => {
               <span className="text-sm text-leoh-accent ml-1 font-black bg-clip-text text-transparent bg-gradient-to-br from-leoh-primary via-leoh-magenta to-leoh-accent">AI</span>
             </h1>
           </div>
-          <button onClick={handleLogout} className="p-2 text-leoh-primary bg-white/5 rounded-full border border-white/10">
-            <ExitIcon />
+          <button onClick={resetChat} className="p-2 text-leoh-primary bg-white/5 rounded-full border border-white/10">
+            <TrashIcon />
           </button>
         </header>
 
@@ -599,9 +528,6 @@ const MemoryIcon = () => (
 const CreateIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
 );
-const ExitIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-);
 const SendIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
 );
@@ -610,6 +536,9 @@ const VibeIcon = () => (
 );
 const AttachIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+);
+const TrashIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
 );
 
 export default App;
