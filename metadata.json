@@ -1,0 +1,8 @@
+{
+  "name": "Leoh AI",
+  "description": "Your vibrant, multi-modal AI companion with a cyber-futuristic soul. Generate text, images, videos, and music with personality.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
